@@ -78,6 +78,7 @@ class UTILS_EXPORT PileupEngine {
   
     public:
         PileupEngine(void);
+        PileupEngine(bool skip_empty);
         ~PileupEngine(void);
         
     public:

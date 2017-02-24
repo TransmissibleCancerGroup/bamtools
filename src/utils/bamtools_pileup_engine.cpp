@@ -21,6 +21,7 @@ struct PileupEngine::PileupEnginePrivate {
     // data members
     int CurrentId;
     int CurrentPosition;
+    bool skip_empty;
     vector<BamAlignment> CurrentAlignments;
     PileupPosition CurrentPileupData;
     
@@ -29,7 +30,14 @@ struct PileupEngine::PileupEnginePrivate {
   
     // ctor & dtor
     PileupEnginePrivate(void)
-        : CurrentId(-1)
+        : skip_empty(false)
+        , CurrentId(-1)
+        , CurrentPosition(-1)
+        , IsFirstAlignment(true)
+    { }
+    PileupEnginePrivate(bool skip_empty)
+        : skip_empty(skip_empty)
+        , CurrentId(-1)
         , CurrentPosition(-1)
         , IsFirstAlignment(true)
     { }
@@ -80,10 +88,19 @@ bool PileupEngine::PileupEnginePrivate::AddAlignment(const BamAlignment& al) {
         
         // else print pileup data until 'catching up' to CurrentPosition
         else {
-            while ( al.Position > CurrentPosition ) {
+            if (skip_empty) {
+                while (CurrentPosition < CurrentAlignments.back().GetEndPosition()) {
+                    ApplyVisitors();
+                    ++CurrentPosition;
+                }
+                CurrentPosition = al.Position - 1;
+            }
+            while (al.Position > CurrentPosition) {
                 ApplyVisitors();
                 ++CurrentPosition;
             }
+
+
             CurrentAlignments.push_back(al);
         }
     } 
@@ -334,6 +351,10 @@ void PileupEngine::PileupEnginePrivate::ParseAlignmentCigar(const BamAlignment& 
 
 PileupEngine::PileupEngine(void)
     : d( new PileupEnginePrivate )
+{ }
+
+PileupEngine::PileupEngine(bool skip_empty)
+    : d( new PileupEnginePrivate(skip_empty) )
 { }
 
 PileupEngine::~PileupEngine(void) {
